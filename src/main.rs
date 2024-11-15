@@ -73,9 +73,6 @@ async fn proxy(
     let host = req.connection_info().host().to_string();
     let subdomain = host.split('.').next().unwrap_or("");
 
-    println!("Host: {}", host);
-    println!("Subdomain: {}", subdomain);
-
     // Check if subdomain exists and is not expired
     let result: SqliteResult<String> = data.db.lock().map_err(|e| {
         actix_web::error::ErrorInternalServerError(format!("Error getting lock: {}", e))
@@ -86,8 +83,6 @@ async fn proxy(
     ).map_err(|e| {
         actix_web::error::ErrorInternalServerError(format!("Error querying database: {}", e))
     })?;
-
-    println!("Subdomain: {}", subdomain);
 
     match result {
         Ok(_) => {
