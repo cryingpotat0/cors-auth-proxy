@@ -15,6 +15,7 @@ struct AppState {
     db: Arc<Mutex<Connection>>,
     expiration_minutes: i64,
     domain: String,
+    api_key: String,
 }
 
 fn generate_random_string() -> String {
@@ -43,7 +44,7 @@ async fn create_subdomain(data: web::Data<AppState>, req: HttpRequest) -> HttpRe
         None => return HttpResponse::Unauthorized().finish(),
     };
 
-    if api_key != env::var("API_KEY").unwrap() {
+    if api_key != data.api_key {
         return HttpResponse::Unauthorized().finish();
     }
 
@@ -203,6 +204,11 @@ async fn main() -> std::io::Result<()> {
         .unwrap();
     let domain = matches.value_of("domain").unwrap_or("example.com");
 
+    let api_key = env::var("API_KEY").expect("API_KEY to be set");
+    if api_key.is_empty() {
+        panic!("API_KEY is empty");
+    }
+
     let conn =
         Connection::open(DB_PATH).map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
     create_table(&conn).map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
@@ -220,6 +226,7 @@ async fn main() -> std::io::Result<()> {
     }
 
     let state = web::Data::new(AppState {
+        api_key,
         db: Arc::new(conn.into()),
         expiration_minutes,
         domain: domain.to_string(),
