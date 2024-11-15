@@ -196,11 +196,11 @@ async fn main() -> std::io::Result<()> {
     let port = matches.value_of("port").unwrap_or("8080").parse().unwrap();
     let expiration_minutes = matches
         .value_of("expiration")
-        .unwrap_or("20")
+        .unwrap_or("5")
         .parse()
         .unwrap();
 
-    let env_domain = env::var("DOMAIN").unwrap_or("example.com".to_string());
+    let env_domain = env::var("SUBDOMAIN").unwrap_or("example.com".to_string());
     let domain = match matches.value_of("domain") {
         Some(d) => d,
         None => &env_domain,

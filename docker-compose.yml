@@ -9,7 +9,7 @@ services:
       - traefik_default
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.cors.rule=Host(`cors.${DOMAIN?:err}`) || HostRegexp(`{subdomain:[a-z]+}.${DOMAIN?:err}`)"
+      - "traefik.http.routers.cors.rule=Host(`cors.${DOMAIN?:err}`) || HostRegexp(`{subdomain:[a-zA-Z0-9]+}.${DOMAIN?:err}`)"
       - "traefik.http.routers.cors.service=cors"
       - "traefik.http.services.cors.loadbalancer.server.port=8080"
 
