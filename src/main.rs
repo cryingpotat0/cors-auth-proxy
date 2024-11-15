@@ -199,7 +199,12 @@ async fn main() -> std::io::Result<()> {
         .unwrap_or("20")
         .parse()
         .unwrap();
-    let domain = matches.value_of("domain").unwrap_or("example.com");
+
+    let env_domain = env::var("DOMAIN").unwrap_or("example.com".to_string());
+    let domain = match matches.value_of("domain") {
+        Some(d) => d,
+        None => &env_domain,
+    };
 
     let api_key = env::var("API_KEY").expect("API_KEY to be set");
     if api_key.is_empty() {
@@ -236,7 +241,7 @@ async fn main() -> std::io::Result<()> {
             .route("/url", web::post().to(create_subdomain))
             .default_service(web::to(proxy))
     })
-    .bind(("127.0.0.1", port))?
+    .bind(("0.0.0.0", port))?
     .run()
     .await
 }
