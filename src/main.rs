@@ -1,6 +1,7 @@
 use actix_web::{web, App, Error, HttpRequest, HttpResponse, HttpServer};
 use chrono::Utc;
 use clap::{App as ClapApp, Arg};
+use log::{error, info};
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 use rusqlite::{params, Connection, Result as SqliteResult};
@@ -84,6 +85,8 @@ async fn proxy(
         actix_web::error::ErrorInternalServerError(format!("Error querying database: {}", e))
     })?;
 
+    info!("Subdomain: {}", subdomain);
+
     match result {
         Ok(_) => {
             // Update touched_at
@@ -102,6 +105,7 @@ async fn proxy(
             // Proxy the request
             let client = reqwest::Client::new();
             let url = format!("https://{}", req.uri().to_string().trim_start_matches('/'));
+            info!("Proxying request to {} with method {}", url, req.method());
 
             let mut proxy_req = client.request(req.method().clone(), &url);
 
@@ -112,11 +116,14 @@ async fn proxy(
 
             // Forward body
             proxy_req = proxy_req.body(body);
+            info!("Request forwarded");
 
             // Send the request
             let proxy_res = proxy_req.send().await.map_err(|e| {
                 actix_web::error::ErrorInternalServerError(format!("Error sending request: {}", e))
             })?;
+
+            info!("Response received");
 
             // Create response and copy status
             let mut client_resp = HttpResponse::build(proxy_res.status());
@@ -124,17 +131,22 @@ async fn proxy(
             // Copy headers
             for (header_name, header_value) in proxy_res.headers().iter() {
                 if header_name != "access-control-allow-origin" {
+                    info!("Returning header: {:?} = {:?}", header_name, header_value);
                     client_resp.append_header((header_name.clone(), header_value.clone()));
                 }
             }
 
-            // Add CORS headers
-            client_resp.append_header(("Access-Control-Allow-Origin", "*"));
-            client_resp.append_header((
-                "Access-Control-Allow-Methods",
-                "GET, POST, PUT, DELETE, OPTIONS",
-            ));
-            client_resp.append_header(("Access-Control-Allow-Headers", "*"));
+            for (header_name, header_value) in [
+                ("Access-Control-Allow-Origin", "*"),
+                (
+                    "Access-Control-Allow-Methods",
+                    "GET, POST, PUT, DELETE, OPTIONS",
+                ),
+                ("Access-Control-Allow-Headers", "*"),
+            ] {
+                info!("Returning header: {:?} = {:?}", header_name, header_value);
+                client_resp.append_header((header_name, header_value));
+            }
 
             // Forward body
             Ok(client_resp.body(proxy_res.bytes().await.map_err(|e| {
@@ -160,6 +172,7 @@ async fn proxy(
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    env_logger::init();
     let matches = ClapApp::new("CORS Proxy")
         .arg(
             Arg::with_name("port")
@@ -189,6 +202,14 @@ async fn main() -> std::io::Result<()> {
                 .long("domain")
                 .value_name("DOMAIN")
                 .help("Sets the domain for the subdomains")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("local")
+                .help("Run on localhost")
+                .short('l')
+                .long("local")
+                .value_name("LOCAL")
                 .takes_value(true),
         )
         .get_matches();
@@ -234,14 +255,20 @@ async fn main() -> std::io::Result<()> {
         domain: domain.to_string(),
     });
 
-    println!("Listening on port {}", port);
+    let bind_url = if matches.is_present("local") {
+        "127.0.0.1"
+    } else {
+        "0.0.0.0"
+    };
+
+    info!("Listening on {}:{}", bind_url, port);
     HttpServer::new(move || {
         App::new()
             .app_data(state.clone())
             .route("/url", web::post().to(create_subdomain))
             .default_service(web::to(proxy))
     })
-    .bind(("0.0.0.0", port))?
+    .bind((bind_url, port))?
     .run()
     .await
 }
