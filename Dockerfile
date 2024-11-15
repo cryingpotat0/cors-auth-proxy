@@ -6,5 +6,5 @@ COPY src ./src
 RUN cargo build --release
 
 EXPOSE 8080
-CMD ["cargo", "run", "--release", "--", "-d", "$DOMAIN"]
+CMD ["cargo", "run", "--release"]
 
