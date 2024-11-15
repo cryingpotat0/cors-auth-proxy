@@ -1,7 +1,6 @@
 use actix_web::{web, App, Error, HttpRequest, HttpResponse, HttpServer};
 use chrono::Utc;
 use clap::{App as ClapApp, Arg};
-use dotenv::dotenv;
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 use rusqlite::{params, Connection, Result as SqliteResult};
@@ -161,8 +160,6 @@ async fn proxy(
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    dotenv().ok();
-
     let matches = ClapApp::new("CORS Proxy")
         .arg(
             Arg::with_name("port")
