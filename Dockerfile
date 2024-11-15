@@ -1,27 +1,10 @@
-FROM node:18.8-alpine as base
+FROM rust:1.82.0-bullseye
 
-FROM base as builder
+COPY Cargo.toml Cargo.lock ./
+COPY src ./src
 
-WORKDIR /home/node/app
-COPY package*.json ./
+RUN cargo build --release
 
-COPY . .
-RUN yarn install
-RUN yarn build
-
-FROM base as runtime
-
-ENV NODE_ENV=production
-ENV PAYLOAD_CONFIG_PATH=dist/payload.config.js
-
-WORKDIR /home/node/app
-COPY package*.json  ./
-COPY yarn.lock ./
-
-EXPOSE 3000
-
-RUN yarn install --production
-COPY --from=builder /home/node/app/dist ./dist
-COPY --from=builder /home/node/app/build ./build
-
+EXPOSE 8080
 CMD ["cargo", "run", "--release", "--", "-d", "$DOMAIN"]
+
