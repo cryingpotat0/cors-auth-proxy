@@ -58,7 +58,13 @@ async fn create_subdomain(data: web::Data<AppState>, req: HttpRequest) -> HttpRe
                 "INSERT INTO subdomains (prefix, touched_at) VALUES (?, ?)",
                 params![prefix, now],
             ) {
-                Ok(_) => HttpResponse::Ok().body(format!("{}.{}", prefix, data.domain)),
+                Ok(_) => HttpResponse::Ok()
+                    .append_header(("Access-Control-Allow-Origin", "*"))
+                    .append_header((
+                        "Access-Control-Allow-Methods",
+                        "GET, POST, PUT, DELETE, OPTIONS",
+                    ))
+                    .body(format!("{}.{}", prefix, data.domain)),
                 Err(_) => HttpResponse::InternalServerError().finish(),
             }
         }
