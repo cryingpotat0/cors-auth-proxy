@@ -90,8 +90,8 @@ async fn proxy(
     // Split the host into parts
     let host_parts: Vec<&str> = host.split('.').collect();
 
-    let subdomain = if host_parts.len() >= 3 {
-        host_parts[host_parts.len() - 3].to_string()
+    let subdomain = if host_parts.len() >= 4 {
+        host_parts[host_parts.len() - 4].to_string()
     } else {
         return Err(actix_web::error::ErrorInternalServerError(format!(
             "Host {:?} should be of length 3 or more",
@@ -129,8 +129,8 @@ async fn proxy(
 
             // Proxy the request
             let client = reqwest::Client::new();
-            let url = if host_parts.len() > 3 {
-                format!("https://{}", host_parts[0..host_parts.len() - 3].join("."))
+            let url = if host_parts.len() > 4 {
+                format!("https://{}", host_parts[0..host_parts.len() - 4].join("."))
             } else {
                 format!("https://{}", req.uri().to_string().trim_start_matches('/'))
             };
