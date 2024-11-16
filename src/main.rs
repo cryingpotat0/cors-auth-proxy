@@ -228,7 +228,7 @@ async fn main() -> std::io::Result<()> {
     let port = matches.value_of("port").unwrap_or("8080").parse().unwrap();
     let expiration_minutes = matches
         .value_of("expiration")
-        .unwrap_or("5")
+        .unwrap_or("60") // 1 hour expiration.
         .parse()
         .unwrap();
 
