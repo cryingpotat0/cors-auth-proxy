@@ -1,3 +1,4 @@
+use actix_web::rt::time::sleep;
 use actix_web::{web, App, Error, HttpRequest, HttpResponse, HttpServer};
 use chrono::Utc;
 use clap::{App as ClapApp, Arg};
@@ -7,6 +8,7 @@ use rand::{thread_rng, Rng};
 use rusqlite::{params, Connection, Result as SqliteResult};
 use std::env;
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
 const DB_PATH: &str = "cors_proxy.db";
 const SUBDOMAIN_LENGTH: usize = 13;
@@ -45,6 +47,8 @@ async fn create_subdomain(data: web::Data<AppState>, req: HttpRequest) -> HttpRe
     };
 
     if api_key != data.api_key {
+        // Prevent timing attacks.
+        sleep(Duration::from_secs(1)).await;
         return HttpResponse::Unauthorized().finish();
     }
 
