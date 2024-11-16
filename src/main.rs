@@ -83,7 +83,21 @@ async fn proxy(
     body: web::Bytes,
 ) -> Result<HttpResponse, Error> {
     let host = req.connection_info().host().to_string();
-    let subdomain = host.split('.').next().unwrap_or("");
+    // Pretend the subdomain is the third from last element on the host. So we are a proxy hosted
+    // at {proxy_url}.{subdomain}.something.example.com OR
+    // {subdomain}.something.example.com/{proxy_url}
+
+    // Split the host into parts
+    let host_parts: Vec<&str> = host.split('.').collect();
+
+    let subdomain = if host_parts.len() >= 3 {
+        host_parts[host_parts.len() - 3].to_string()
+    } else {
+        return Err(actix_web::error::ErrorInternalServerError(format!(
+            "Host {:?} should be of length 3 or more",
+            host
+        )));
+    };
 
     // Check if subdomain exists and is not expired
     let result: SqliteResult<String> = data.db.lock().map_err(|e| {
@@ -115,7 +129,11 @@ async fn proxy(
 
             // Proxy the request
             let client = reqwest::Client::new();
-            let url = format!("https://{}", req.uri().to_string().trim_start_matches('/'));
+            let url = if host_parts.len() > 3 {
+                format!("https://{}", host_parts[0..host_parts.len() - 3].join("."))
+            } else {
+                format!("https://{}", req.uri().to_string().trim_start_matches('/'))
+            };
             info!("Proxying request to {} with method {}", url, req.method());
 
             let mut proxy_req = client.request(req.method().clone(), &url);
