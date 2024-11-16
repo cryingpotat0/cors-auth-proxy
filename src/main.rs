@@ -275,7 +275,7 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .app_data(state.clone())
-            .route("/url", web::post().to(create_subdomain))
+            .route("/url", web::get().to(create_subdomain))
             .default_service(web::to(proxy))
     })
     .bind((bind_url, port))?
