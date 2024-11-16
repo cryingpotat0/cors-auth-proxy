@@ -130,7 +130,11 @@ async fn proxy(
             // Proxy the request
             let client = reqwest::Client::new();
             let url = if host_parts.len() > 4 {
-                format!("https://{}", host_parts[0..host_parts.len() - 4].join("."))
+                format!(
+                    "https://{}{}",
+                    host_parts[0..host_parts.len() - 4].join("."),
+                    req.uri()
+                )
             } else {
                 format!("https://{}", req.uri().to_string().trim_start_matches('/'))
             };
