@@ -1,3 +1,4 @@
+use actix_cors::Cors;
 use actix_web::rt::time::sleep;
 use actix_web::{web, App, Error, HttpRequest, HttpResponse, HttpServer};
 use chrono::Utc;
@@ -273,8 +274,11 @@ async fn main() -> std::io::Result<()> {
 
     info!("Listening on {}:{}", bind_url, port);
     HttpServer::new(move || {
+        let cors = Cors::permissive();
         App::new()
             .app_data(state.clone())
+            .wrap(cors)
+            .route("/url", web::get().to(create_subdomain))
             .route("/url", web::get().to(create_subdomain))
             .default_service(web::to(proxy))
     })
