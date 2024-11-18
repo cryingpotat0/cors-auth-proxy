@@ -82,6 +82,8 @@ async fn proxy(
     req: HttpRequest,
     body: web::Bytes,
 ) -> Result<HttpResponse, Error> {
+    info!("Proxy request: {:?}", req);
+
     let host = req.connection_info().host().to_string();
     // Pretend the subdomain is the third from last element on the host. So we are a proxy hosted
     // at {proxy_url}.{subdomain}.something.example.com OR
@@ -300,7 +302,6 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .app_data(state.clone())
             .wrap(cors)
-            .route("/url", web::get().to(create_subdomain))
             .route("/url", web::get().to(create_subdomain))
             .default_service(web::to(proxy))
     })
